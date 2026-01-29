@@ -150,7 +150,7 @@ Be natural, brief, and respectful. Quality over quantity."""
         
         return summary
     
-    def _should_end_call(self, response: str, state: ConversationState) -> bool:
+    def _should_end_call(self, response: str, state: ConversationState, user_input: str = "") -> bool:
         """Determine if call should end based on response and state"""
         # Check for end marker
         if "[END_CALL]" in response:
@@ -161,6 +161,10 @@ Be natural, brief, and respectful. Quality over quantity."""
             return True
         
         if state.context.get("user_is_busy"):
+            return True
+        
+        # Check for excessive silence
+        if state.context.get("silence_count", 0) >= 2:
             return True
         
         if state.questions_asked >= 3:
