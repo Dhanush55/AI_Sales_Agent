@@ -68,17 +68,30 @@ const CampaignList = () => {
             {campaigns.map((campaign) => (
               <div
                 key={campaign.id}
-                className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
-                onClick={() => navigate(`/campaigns/${campaign.id}/leads`)}
+                className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-colors"
                 data-testid="campaign-card"
               >
                 <h3 className="text-xl font-bold text-white mb-2">{campaign.name}</h3>
                 <p className="text-slate-400 text-sm mb-4 line-clamp-2">{campaign.goal}</p>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-4">
                   <span className="text-slate-500 text-sm capitalize">
                     {campaign.language.replace('_', ' ')}
                   </span>
                   <span className="text-green-400 text-sm">{campaign.status}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate(`/campaigns/${campaign.id}/leads`)}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+                  >
+                    Manage Leads
+                  </button>
+                  <button
+                    onClick={() => navigate(`/campaigns/${campaign.id}/analytics`)}
+                    className="flex-1 bg-slate-700 text-white px-4 py-2 rounded-md hover:bg-slate-600 text-sm"
+                  >
+                    Analytics
+                  </button>
                 </div>
               </div>
             ))}
