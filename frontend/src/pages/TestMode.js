@@ -224,6 +224,22 @@ const TestMode = () => {
     }
   };
 
+  const getStatusMessage = () => {
+    if (callEnded) return 'Call Ended';
+    if (isSpeaking) return 'Agent Speaking...';
+    if (isRecording) return 'Listening...';
+    if (loading) return 'Processing...';
+    return 'Ready';
+  };
+
+  const getStatusColor = () => {
+    if (callEnded) return 'text-gray-400';
+    if (isSpeaking) return 'text-green-400';
+    if (isRecording) return 'text-blue-400';
+    if (loading) return 'text-yellow-400';
+    return 'text-slate-400';
+  };
+
   return (
     <div className="min-h-screen bg-slate-900">
       <Navbar />
