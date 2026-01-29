@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CampaignCreate from './pages/CampaignCreate';
 import CampaignList from './pages/CampaignList';
+import CampaignAnalytics from './pages/CampaignAnalytics';
 import LeadsList from './pages/LeadsList';
 import CallsList from './pages/CallsList';
 import CallDetails from './pages/CallDetails';
