@@ -279,8 +279,34 @@ const TestMode = () => {
             )}
           </div>
 
+          {/* Voice Status Indicator */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                isRecording ? 'bg-blue-400 animate-pulse' : 
+                isSpeaking ? 'bg-green-400 animate-pulse' : 
+                'bg-slate-600'
+              }`}></div>
+              <span className={`text-sm font-medium ${getStatusColor()}`}>
+                {getStatusMessage()}
+              </span>
+            </div>
+            
+            {voiceError && (
+              <span className="text-xs text-yellow-400" data-testid="voice-error">
+                {voiceError}
+              </span>
+            )}
+            
+            {voiceEnabled && micPermission && (
+              <span className="text-xs text-green-400">
+                🎤 Voice Mode Active
+              </span>
+            )}
+          </div>
+
           {campaigns.length === 0 && (
-            <div className="text-center py-8">
+            <div className="text-center py-8 mt-4">
               <p className="text-slate-400 mb-4">No campaigns available</p>
               <button
                 onClick={() => window.location.href = '/campaigns/create'}
