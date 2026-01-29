@@ -132,6 +132,74 @@ const LeadsList = () => {
           </div>
         </div>
 
+        {showBulkImport && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-6">
+            <h3 className="text-white font-bold mb-4">Bulk Import Leads from CSV</h3>
+            <form onSubmit={handleBulkImport} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Upload CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setCsvFile(e.target.files[0])}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white"
+                  data-testid="csv-file-input"
+                />
+                <p className="text-slate-400 text-xs mt-2">
+                  CSV Format: name,phone (headers required)
+                </p>
+                <button
+                  type="button"
+                  onClick={downloadSampleCSV}
+                  className="text-blue-400 hover:text-blue-300 text-xs mt-1"
+                >
+                  Download Sample CSV
+                </button>
+              </div>
+
+              {importResult && (
+                <div className={`p-4 rounded-md ${
+                  importResult.skipped_count > 0 ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-green-900/20 border border-green-800'
+                }`}>
+                  <p className="text-white font-medium">
+                    ✓ Imported {importResult.imported_count} leads
+                  </p>
+                  {importResult.skipped_count > 0 && (
+                    <p className="text-yellow-400 text-sm mt-1">
+                      ⚠ Skipped {importResult.skipped_count} rows (check format)
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={!csvFile || importing}
+                  className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="import-csv-btn"
+                >
+                  {importing ? 'Importing...' : 'Import Leads'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBulkImport(false);
+                    setCsvFile(null);
+                    setImportResult(null);
+                  }}
+                  className="bg-slate-700 text-white px-6 py-2 rounded-md hover:bg-slate-600"
+                  data-testid="cancel-import-btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {showAddLead && (
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-6">
             <h3 className="text-white font-bold mb-4">Add New Lead</h3>
