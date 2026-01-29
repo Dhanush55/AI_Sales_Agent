@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 
@@ -10,6 +10,17 @@ const TestMode = () => {
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
+  
+  // Voice-related states
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const [micPermission, setMicPermission] = useState(null);
+  
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     fetchCampaigns();
