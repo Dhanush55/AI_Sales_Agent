@@ -70,6 +70,97 @@ const TestMode = () => {
     setMessages([]);
     setCallEnded(false);
     setUserInput('');
+    setVoiceError('');
+  };
+
+  const startRecording = async () => {
+    if (!selectedCampaign || callEnded || isSpeaking) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        await processVoiceInput(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setVoiceError('Failed to start recording. Using text mode.');
+      setMicPermission(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processVoiceInput = async (audioBlob) => {
+    setLoading(true);
+    try {
+      // Send audio to STT
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.wav');
+      
+      const sttResponse = await api.post('/voice/stt', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      const transcribedText = sttResponse.data.text;
+      
+      // Send transcribed text to chat endpoint
+      await sendMessage(null, transcribedText);
+      
+    } catch (error) {
+      console.error('Error processing voice input:', error);
+      setVoiceError('Voice processing failed. Please use text input.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const playAgentResponse = async (text, language) => {
+    if (!voiceEnabled) return;
+
+    try {
+      setIsSpeaking(true);
+      
+      const response = await api.post('/voice/tts', {
+        text,
+        language: language || 'indian_english'
+      }, {
+        responseType: 'blob'
+      });
+
+      const audioUrl = URL.createObjectURL(response.data);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Error playing agent response:', error);
+      setIsSpeaking(false);
+    }
   };
 
   const sendMessage = async (simulate = null) => {
