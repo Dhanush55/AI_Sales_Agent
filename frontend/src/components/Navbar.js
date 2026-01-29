@@ -35,6 +35,13 @@ const Navbar = () => {
                 Campaigns
               </Link>
               <Link
+                to="/calls"
+                className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                data-testid="nav-calls"
+              >
+                Calls
+              </Link>
+              <Link
                 to="/test-mode"
                 className="text-slate-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                 data-testid="nav-test-mode"
