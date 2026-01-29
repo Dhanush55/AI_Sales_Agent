@@ -50,6 +50,41 @@ const LeadsList = () => {
     }
   };
 
+  const handleBulkImport = async (e) => {
+    e.preventDefault();
+    if (!csvFile) return;
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+
+      const response = await api.post(`/leads/bulk-import?campaign_id=${campaignId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setImportResult(response.data);
+      setCsvFile(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error importing leads:', error);
+      alert('Failed to import leads. Please check CSV format.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadSampleCSV = () => {
+    const csvContent = 'name,phone\nJohn Doe,+919876543210\nJane Smith,+919876543211';
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_leads.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900">
