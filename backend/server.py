@@ -17,7 +17,7 @@ from utils.db import db, client
 app = FastAPI(title="Voice Sales Agent API")
 
 # Import routers
-from routes import auth, campaigns, leads, calls, test_mode, conversation_states
+from routes import auth, campaigns, leads, calls, test_mode, conversation_states, voice
 
 # Include routers
 app.include_router(auth.router, prefix="/api")
@@ -26,6 +26,7 @@ app.include_router(leads.router, prefix="/api")
 app.include_router(calls.router, prefix="/api")
 app.include_router(test_mode.router, prefix="/api")
 app.include_router(conversation_states.router, prefix="/api")
+app.include_router(voice.router, prefix="/api")
 
 # Root endpoint
 @app.get("/api/")
