@@ -163,27 +163,28 @@ const TestMode = () => {
     }
   };
 
-  const sendMessage = async (simulate = null) => {
-    if (!selectedCampaign || (!userInput.trim() && !simulate)) return;
+  const sendMessage = async (simulate = null, voiceTranscript = null) => {
+    const messageText = voiceTranscript || userInput;
+    if (!selectedCampaign || (!messageText.trim() && !simulate)) return;
 
     setLoading(true);
     try {
       const payload = {
         campaign_id: selectedCampaign,
-        user_input: userInput || '',
+        user_input: messageText || '',
         call_id: currentCallId,
         simulate: simulate
       };
 
       const response = await api.post('/test-mode/chat', payload);
-      const { call_id, agent_response, should_end_call } = response.data;
+      const { call_id, agent_response, should_end_call, conversation_state } = response.data;
 
       setCurrentCallId(call_id);
       
       if (!simulate) {
         setMessages(prev => [
           ...prev,
-          { speaker: 'user', text: userInput },
+          { speaker: 'user', text: messageText },
           { speaker: 'agent', text: agent_response }
         ]);
       } else {
@@ -199,6 +200,15 @@ const TestMode = () => {
       if (should_end_call) {
         setCallEnded(true);
       }
+
+      // Play agent response via TTS if voice is enabled
+      if (voiceEnabled && !simulate && agent_response) {
+        const language = conversation_state?.language_detected || 
+                        campaigns.find(c => c.id === selectedCampaign)?.language || 
+                        'indian_english';
+        await playAgentResponse(agent_response, language);
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Failed to send message. Please try again.');
