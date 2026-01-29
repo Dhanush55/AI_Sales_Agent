@@ -8,7 +8,11 @@ const LeadsList = () => {
   const [campaign, setCampaign] = useState(null);
   const [leads, setLeads] = useState([]);
   const [showAddLead, setShowAddLead] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [csvFile, setCsvFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
