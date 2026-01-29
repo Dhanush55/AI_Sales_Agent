@@ -374,20 +374,57 @@ const TestMode = () => {
                   Simulate Interruption
                 </button>
               </div>
+              
+              {/* Voice Input (Primary) */}
+              {voiceEnabled && micPermission && (
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onMouseLeave={stopRecording}
+                    onTouchStart={startRecording}
+                    onTouchEnd={stopRecording}
+                    disabled={loading || callEnded || isSpeaking}
+                    className={`flex-1 py-4 rounded-lg font-medium transition-all ${
+                      isRecording 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                    data-testid="voice-input-btn"
+                  >
+                    {isRecording ? (
+                      <>
+                        <span className="animate-pulse">🎤</span>
+                        <span>Release to Send</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🎤</span>
+                        <span>Hold to Speak</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+              
+              {/* Text Input (Fallback) */}
+              <div className="text-xs text-slate-400 mb-2">
+                {voiceEnabled && micPermission ? 'Or type your message:' : 'Text mode:'}
+              </div>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type your message..."
-                  disabled={loading || callEnded}
+                  placeholder={voiceEnabled && micPermission ? "Type here (fallback)..." : "Type your message..."}
+                  disabled={loading || callEnded || isSpeaking}
                   className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   data-testid="user-input"
                 />
                 <button
                   onClick={() => sendMessage()}
-                  disabled={loading || callEnded || !userInput.trim()}
+                  disabled={loading || callEnded || !userInput.trim() || isSpeaking}
                   className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="send-message-btn"
                 >
