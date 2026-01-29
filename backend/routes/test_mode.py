@@ -91,7 +91,7 @@ async def test_mode_chat(input_data: TestModeInput, user_id: str = Depends(get_c
             )
             
             # Determine outcome
-            outcome = self._determine_outcome(conversation_state)
+            outcome = _determine_outcome(conversation_state)
             outcome_doc = prepare_for_mongo(outcome.model_dump())
             await db.call_outcomes.insert_one(outcome_doc)
             
