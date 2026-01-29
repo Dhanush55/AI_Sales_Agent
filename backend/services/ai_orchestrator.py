@@ -140,13 +140,20 @@ Be natural, brief, and respectful. Quality over quantity."""
     
     def _build_context_summary(self, state: ConversationState) -> str:
         """Build context summary from conversation state"""
-        summary = f"Turn {state.current_turn}. Questions asked: {state.questions_asked}/3."
+        summary = f"Turn {state.current_turn}. Conversation ongoing."
         
         if state.not_interested_count > 0:
             summary += f" User has said not interested {state.not_interested_count} time(s)."
         
         if state.context.get("user_is_busy"):
             summary += " User indicated they are busy."
+        
+        if state.context.get("silence_count", 0) > 0:
+            summary += f" User has been silent {state.context['silence_count']} time(s)."
+        
+        # Engagement indicators
+        if state.current_turn > 5:
+            summary += " Extended conversation - user appears engaged."
         
         return summary
     
