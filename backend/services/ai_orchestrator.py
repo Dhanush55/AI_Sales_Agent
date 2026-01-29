@@ -157,27 +157,26 @@ Be natural, brief, and respectful. Quality over quantity."""
         
         return summary
     
-    def _should_end_call(self, response: str, state: ConversationState, user_input: str = "") -> bool:
-        """Determine if call should end based on response and state"""
-        # Check for end marker
+    def _should_end_call(self, response: str, state: ConversationState, user_input: str) -> bool:
+        """Determine if call should end based on response, state, and user input"""
+        # Check for end marker in AI response
         if "[END_CALL]" in response:
             return True
         
-        # Business rules
-        if state.not_interested_count >= 2:
+        # MANDATORY: End if user says not interested (even once)
+        if state.not_interested_count >= 1:
             return True
         
+        # MANDATORY: End if user is busy
         if state.context.get("user_is_busy"):
             return True
         
-        # Check for excessive silence
+        # MANDATORY: End after repeated silence
         if state.context.get("silence_count", 0) >= 2:
             return True
         
-        if state.questions_asked >= 3:
-            return True
-        
-        if state.current_turn >= 15:
+        # Safety: End if conversation is too long (natural limit)
+        if state.current_turn >= 20:
             return True
         
         return False
