@@ -77,6 +77,16 @@ Be natural, brief, and respectful. Quality over quantity."""
             Tuple[str, bool]: (agent_response, should_end_call)
         """
         try:
+            # Auto-detect language from first user input if not already detected
+            if not conversation_state.language_detected and conversation_state.current_turn == 0:
+                detected_lang = self._detect_language(user_input)
+                if detected_lang:
+                    conversation_state.language_detected = detected_lang
+                    language = detected_lang  # Use detected language
+            elif conversation_state.language_detected:
+                # Use locked language
+                language = conversation_state.language_detected
+            
             # Create new chat instance for this call if needed
             session_id = f"call_{conversation_state.call_id}"
             
@@ -92,12 +102,17 @@ Be natural, brief, and respectful. Quality over quantity."""
             # Build context from previous turns
             context_summary = self._build_context_summary(conversation_state)
             
-            # Check for business rules
-            if "busy" in user_input.lower() or "not now" in user_input.lower():
+            # Check for stopping triggers
+            user_lower = user_input.lower()
+            if "busy" in user_lower or "not now" in user_lower:
                 conversation_state.context["user_is_busy"] = True
             
-            if "not interested" in user_input.lower() or "no thanks" in user_input.lower():
+            if "not interested" in user_lower or "no thanks" in user_lower:
                 conversation_state.not_interested_count += 1
+            
+            # Check for silence indicators
+            if "[User is silent]" in user_input or user_input.strip() == "":
+                conversation_state.context["silence_count"] = conversation_state.context.get("silence_count", 0) + 1
             
             # Prepare user message with context
             full_message = f"{context_summary}\nUser: {user_input}"
@@ -107,7 +122,7 @@ Be natural, brief, and respectful. Quality over quantity."""
             response = await chat.send_message(user_message)
             
             # Check if call should end
-            should_end = self._should_end_call(response, conversation_state)
+            should_end = self._should_end_call(response, conversation_state, user_input)
             
             # Remove [END_CALL] marker from response if present
             clean_response = response.replace("[END_CALL]", "").strip()
@@ -116,10 +131,6 @@ Be natural, brief, and respectful. Quality over quantity."""
             conversation_state.current_turn += 1
             conversation_state.turns.append(ConversationTurn(speaker="user", text=user_input))
             conversation_state.turns.append(ConversationTurn(speaker="agent", text=clean_response))
-            
-            # Count questions asked
-            if "?" in clean_response:
-                conversation_state.questions_asked += 1
             
             return clean_response, should_end
             
