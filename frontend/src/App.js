@@ -44,6 +44,14 @@ function App() {
             }
           />
           <Route
+            path="/campaigns/:campaignId/analytics"
+            element={
+              <AuthGuard>
+                <CampaignAnalytics />
+              </AuthGuard>
+            }
+          />
+          <Route
             path="/campaigns/:campaignId/leads"
             element={
               <AuthGuard>
