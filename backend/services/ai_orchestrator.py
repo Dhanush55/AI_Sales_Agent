@@ -175,6 +175,26 @@ Be natural, brief, and respectful. Quality over quantity."""
         
         return False
     
+    def _detect_language(self, user_input: str) -> str:
+        """Detect language from user input"""
+        user_lower = user_input.lower()
+        
+        # Simple keyword-based detection
+        hindi_keywords = ['हाँ', 'नहीं', 'क्या', 'कैसे', 'कहाँ', 'कब', 'मैं', 'आप', 'है', 'हैं']
+        kannada_keywords = ['ಹೌದು', 'ಇಲ್ಲ', 'ಏನು', 'ಹೇಗೆ', 'ಎಲ್ಲಿ', 'ಯಾವಾಗ', 'ನಾನು', 'ನೀವು']
+        tamil_keywords = ['ஆம்', 'இல்லை', 'என்ன', 'எப்படி', 'எங்கே', 'எப்போது', 'நான்', 'நீங்கள்']
+        
+        # Check for script-based detection
+        if any(keyword in user_input for keyword in hindi_keywords):
+            return "hindi"
+        elif any(keyword in user_input for keyword in kannada_keywords):
+            return "kannada"
+        elif any(keyword in user_input for keyword in tamil_keywords):
+            return "tamil"
+        
+        # Default to Indian English
+        return "indian_english"
+    
     async def generate_call_summary(self, conversation_state: ConversationState) -> str:
         """Generate a summary of the call"""
         try:
