@@ -177,8 +177,6 @@ Be natural, brief, and respectful. Quality over quantity."""
     
     def _detect_language(self, user_input: str) -> str:
         """Detect language from user input"""
-        user_lower = user_input.lower()
-        
         # Simple keyword-based detection
         hindi_keywords = ['हाँ', 'नहीं', 'क्या', 'कैसे', 'कहाँ', 'कब', 'मैं', 'आप', 'है', 'हैं']
         kannada_keywords = ['ಹೌದು', 'ಇಲ್ಲ', 'ಏನು', 'ಹೇಗೆ', 'ಎಲ್ಲಿ', 'ಯಾವಾಗ', 'ನಾನು', 'ನೀವು']
