@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import CampaignCreate from './pages/CampaignCreate';
 import CampaignList from './pages/CampaignList';
 import LeadsList from './pages/LeadsList';
+import CallsList from './pages/CallsList';
+import CallDetails from './pages/CallDetails';
 import TestMode from './pages/TestMode';
 import './App.css';
 
@@ -45,6 +47,22 @@ function App() {
             element={
               <AuthGuard>
                 <LeadsList />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/calls"
+            element={
+              <AuthGuard>
+                <CallsList />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/calls/:callId"
+            element={
+              <AuthGuard>
+                <CallDetails />
               </AuthGuard>
             }
           />
