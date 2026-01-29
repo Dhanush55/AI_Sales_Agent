@@ -414,7 +414,7 @@ class VoiceSalesAgentTester:
             "Protected Endpoint Without Auth",
             "GET",
             "campaigns",
-            401  # Should return unauthorized
+            403  # Should return forbidden (not authenticated)
         )
         
         # Restore token
