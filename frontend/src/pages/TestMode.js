@@ -24,7 +24,34 @@ const TestMode = () => {
 
   useEffect(() => {
     fetchCampaigns();
+    checkVoiceStatus();
+    checkMicPermission();
   }, []);
+
+  const checkVoiceStatus = async () => {
+    try {
+      const response = await api.get('/voice/status');
+      setVoiceEnabled(response.data.voice_enabled);
+      if (!response.data.voice_enabled) {
+        setVoiceError('Voice services not configured. Using text mode.');
+      }
+    } catch (error) {
+      console.error('Error checking voice status:', error);
+      setVoiceError('Voice services unavailable. Using text mode.');
+    }
+  };
+
+  const checkMicPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      setMicPermission(true);
+    } catch (error) {
+      console.log('Microphone permission denied or unavailable');
+      setMicPermission(false);
+      setVoiceError('Microphone access denied. Using text mode.');
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
