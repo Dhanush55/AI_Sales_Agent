@@ -16,5 +16,20 @@ class Settings:
     JWT_EXPIRATION_HOURS = int(os.environ.get('JWT_EXPIRATION_HOURS', 24))
     APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://localhost:8001')
 
+    # Telephony selection
+    TELEPHONY_PROVIDER = os.environ.get('TELEPHONY_PROVIDER', 'twilio')
+
+    # Twilio
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
+    TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '')
+
+    # Exotel
+    EXOTEL_SID = os.environ.get('EXOTEL_SID', '')
+    EXOTEL_API_KEY = os.environ.get('EXOTEL_API_KEY', '')
+    EXOTEL_API_TOKEN = os.environ.get('EXOTEL_API_TOKEN', '')
+    EXOTEL_SUBDOMAIN = os.environ.get('EXOTEL_SUBDOMAIN', 'api')
+    EXOTEL_PHONE_NUMBER = os.environ.get('EXOTEL_PHONE_NUMBER', '')
+
 
 settings = Settings()

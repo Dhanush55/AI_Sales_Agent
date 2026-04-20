@@ -21,6 +21,7 @@ async def create_indexes():
     await db.campaigns.create_index([("user_id", 1)])
     await db.leads.create_index([("campaign_id", 1), ("status", 1)])
     await db.calls.create_index([("campaign_id", 1), ("status", 1)])
+    await db.calls.create_index([("call_sid", 1)], sparse=True)
     await db.calls.create_index([("twilio_call_sid", 1)], sparse=True)
     await db.conversation_states.create_index([("call_id", 1)], unique=True)
     await db.dialer_sessions.create_index([("campaign_id", 1), ("status", 1)])

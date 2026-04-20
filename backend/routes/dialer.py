@@ -41,10 +41,14 @@ async def _dial_next(session_id: str):
         return
 
     webhook_url = (
-        f"{settings.APP_BASE_URL}/api/phone/webhook/answer"
+        f"{settings.APP_BASE_URL}/api/phone/"
+        f"{'exotel/answer' if telephony_service.provider_name == 'exotel' else 'webhook/answer'}"
         f"?campaign_id={session['campaign_id']}&lead_id={lead_id}"
     )
-    status_url = f"{settings.APP_BASE_URL}/api/phone/webhook/status"
+    status_url = (
+        f"{settings.APP_BASE_URL}/api/phone/"
+        f"{'exotel/status' if telephony_service.provider_name == 'exotel' else 'webhook/status'}"
+    )
 
     try:
         result = await telephony_service.provider.initiate_call(lead["phone"], webhook_url, status_url)
@@ -61,7 +65,7 @@ async def _dial_next(session_id: str):
         lead_id=lead_id,
         status="in_progress",
         call_source="dialer",
-        twilio_call_sid=result["call_sid"],
+        call_sid=result["call_sid"],
         dialer_session_id=session_id,
     )
     await db.calls.insert_one(prepare_for_mongo(call.model_dump()))

@@ -43,10 +43,16 @@ The AI adapts purely through `campaign.goal` — no industry hardcoded anywhere.
 - `/api/analytics/{overview,campaign/{id}}` (tenant-scoped)
 
 ## Implemented (Feb 2026)
-- [x] Real-time Twilio Media Streams: WebSocket endpoint `/ws/media-stream/{call_id}`
-      (mu-law 8kHz bi-directional). Answer webhook now emits `<Connect><Stream>`.
-      End-to-end pipeline verified locally (AI greeting → edge-tts → ffmpeg mulaw → WS frames).
-      nginx.conf updated to proxy /ws/ with Upgrade headers for Docker deploy.
+- [x] **Exotel provider** added alongside Twilio — switch via
+      `TELEPHONY_PROVIDER` env. New routes `/api/phone/exotel/{answer,status}`
+      emit ExoML and accept both form + JSON status callbacks.
+      Manual call + dialer auto-pick the right webhook path per provider.
+- [x] **Field rename** `twilio_call_sid` → `call_sid` on Call model with
+      backward-compat read helpers (`_find_call_by_sid`, `_update_call_by_sid`)
+      so pre-existing docs with the old field still resolve.
+- [x] Answer webhook fallback: if `CallSid` isn't matched, falls back to
+      `campaign_id + lead_id + status=in_progress` and backfills the sid.
+- [x] Real-time Twilio Media Streams WebSocket `/ws/media-stream/{call_id}`
 - [x] JWT auth + company_name + `is_admin` flag
 - [x] Campaign/Lead/Call CRUD with tenant isolation (all queries filter
       through user's own campaigns)

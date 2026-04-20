@@ -18,7 +18,7 @@ class Call(CallBase):
     status: Literal["in_progress", "completed", "failed"] = "in_progress"
     duration: Optional[int] = None
     call_source: Literal["test", "manual", "dialer"] = "test"
-    twilio_call_sid: Optional[str] = None
+    call_sid: Optional[str] = None
     dialer_session_id: Optional[str] = None
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: Optional[datetime] = None
