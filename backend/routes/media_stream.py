@@ -84,6 +84,7 @@ async def media_stream(websocket: WebSocket, call_id: str):
     silence_chunks = 0
     speech_detected = False
     processing = False
+    cancel_playback = asyncio.Event()  # set this to interrupt in-flight TTS
 
     # Look up the call to resolve campaign + language
     call_doc = await db.calls.find_one({"id": call_id}, {"_id": 0})
@@ -105,14 +106,24 @@ async def media_stream(websocket: WebSocket, call_id: str):
     language = state.language_detected or campaign.get("language", "indian_english")
 
     async def send_audio_to_caller(text: str):
-        """TTS the text and stream back to Twilio as mu-law frames."""
+        """TTS the text and stream back to Twilio as mu-law frames.
+        Respects cancel_playback for barge-in: stops mid-stream if user speaks."""
         nonlocal processing
         try:
+            cancel_playback.clear()
             mp3_bytes = await voice_service.text_to_speech(text, language)
             mulaw_bytes = mp3_to_mulaw(mp3_bytes)
 
             chunk_size = 320  # 20 ms at 8 kHz mu-law
             for i in range(0, len(mulaw_bytes), chunk_size):
+                if cancel_playback.is_set():
+                    # User interrupted — clear Twilio's audio buffer and stop
+                    await websocket.send_json({
+                        "event": "clear",
+                        "streamSid": stream_sid,
+                    })
+                    logger.info("Barge-in detected — playback cancelled")
+                    return
                 chunk = mulaw_bytes[i : i + chunk_size]
                 payload = base64.b64encode(chunk).decode()
                 await websocket.send_json({
@@ -203,9 +214,6 @@ async def media_stream(websocket: WebSocket, call_id: str):
                     asyncio.create_task(send_audio_to_caller(greeting))
 
             elif event == "media":
-                if processing:
-                    continue
-
                 track = data["media"].get("track", "inbound")
                 if track != "inbound":
                     continue
@@ -213,6 +221,11 @@ async def media_stream(websocket: WebSocket, call_id: str):
                 chunk = base64.b64decode(data["media"]["payload"])
 
                 if is_speech(chunk, SILENCE_THRESHOLD):
+                    if processing:
+                        # Barge-in: user started talking while AI is speaking
+                        cancel_playback.set()
+                        audio_buffer.clear()
+
                     speech_detected = True
                     silence_chunks = 0
                     audio_buffer.extend(chunk)
@@ -221,7 +234,7 @@ async def media_stream(websocket: WebSocket, call_id: str):
                     audio_buffer.extend(chunk)
 
                     if silence_chunks >= SILENCE_CHUNKS_NEEDED:
-                        if len(audio_buffer) > MIN_SPEECH_BYTES:
+                        if len(audio_buffer) > MIN_SPEECH_BYTES and not processing:
                             audio_to_process = bytes(audio_buffer)
                             audio_buffer.clear()
                             speech_detected = False

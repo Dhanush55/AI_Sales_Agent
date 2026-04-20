@@ -60,6 +60,16 @@ async def on_startup():
     except Exception as e:
         logger.error(f"Failed to create indexes: {e}")
 
+    # Warm up faster-whisper so the first real call has no cold-start delay
+    try:
+        from services.voice_service import voice_service
+        import asyncio
+        if hasattr(voice_service.stt_provider, '_get_model'):
+            await asyncio.to_thread(voice_service.stt_provider._get_model)
+            logger.info("faster-whisper model warmed up")
+    except Exception as e:
+        logger.warning(f"faster-whisper warm-up skipped: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
