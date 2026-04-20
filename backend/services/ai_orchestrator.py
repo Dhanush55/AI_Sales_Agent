@@ -12,7 +12,7 @@ class AIOrchestrator:
     def __init__(self):
         self.api_key = settings.EMERGENT_LLM_KEY
     
-    def _get_system_prompt(self, campaign_goal: str, language: str, industry: str = "B2B automotive workshop machinery") -> str:
+    def _get_system_prompt(self, campaign_goal: str, language: str) -> str:
         """Generate system prompt based on campaign context"""
         
         language_map = {
@@ -24,7 +24,7 @@ class AIOrchestrator:
         
         lang_name = language_map.get(language, "Indian English")
         
-        return f"""You are a professional B2B sales conversational agent for {industry} sales. Your goal is: {campaign_goal}
+        return f"""You are a professional sales agent. Your goal is: {campaign_goal}
 
 CONVERSATIONAL STYLE (VOICE-FIRST):
 - You are having a natural voice conversation with a human

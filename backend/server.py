@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
 import logging
 from pathlib import Path
 from config import settings
@@ -10,16 +8,15 @@ from config import settings
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-from utils.db import db, client
+from utils.db import db, client, create_indexes
 
-# Create the main app
 app = FastAPI(title="Voice Sales Agent API")
 
-# Import routers
-from routes import auth, campaigns, leads, calls, test_mode, conversation_states, voice, bulk_operations, analytics
+from routes import (
+    auth, campaigns, leads, calls, test_mode, conversation_states, voice,
+    bulk_operations, analytics, phone_calls, dialer, admin,
+)
 
-# Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(campaigns.router, prefix="/api")
 app.include_router(leads.router, prefix="/api")
@@ -29,13 +26,16 @@ app.include_router(conversation_states.router, prefix="/api")
 app.include_router(voice.router, prefix="/api")
 app.include_router(bulk_operations.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(phone_calls.router, prefix="/api")
+app.include_router(dialer.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
-# Root endpoint
+
 @app.get("/api/")
 async def root():
     return {"message": "Voice Sales Agent API"}
 
-# CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -44,12 +44,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+@app.on_event("startup")
+async def on_startup():
+    try:
+        await create_indexes()
+        logger.info("MongoDB indexes created")
+    except Exception as e:
+        logger.error(f"Failed to create indexes: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

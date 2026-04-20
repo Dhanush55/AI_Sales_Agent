@@ -1,140 +1,182 @@
+"""Voice service with pluggable STT and TTS providers."""
 from abc import ABC, abstractmethod
 from typing import BinaryIO, Optional
 import os
+import io
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class STTProvider(ABC):
-    """Abstract base class for Speech-to-Text providers"""
-    
     @abstractmethod
-    async def transcribe(self, audio_data: BinaryIO, language: Optional[str] = None) -> str:
-        """Transcribe audio to text"""
-        pass
+    async def transcribe(self, audio_data: BinaryIO, language: Optional[str] = None) -> str: ...
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
 
 class TTSProvider(ABC):
-    """Abstract base class for Text-to-Speech providers"""
-    
     @abstractmethod
-    async def synthesize(self, text: str, language: str, voice_id: Optional[str] = None) -> bytes:
-        """Synthesize text to speech audio"""
-        pass
+    async def synthesize(self, text: str, language: str, voice_id: Optional[str] = None) -> bytes: ...
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+
+LANG_MAP = {
+    "indian_english": "en",
+    "hindi": "hi",
+    "kannada": "kn",
+    "tamil": "ta",
+}
+
 
 class OpenAIWhisperSTT(STTProvider):
-    """OpenAI Whisper STT implementation"""
-    
     def __init__(self, api_key: str):
         self.api_key = api_key
-    
+
+    @property
+    def name(self) -> str:
+        return "openai_whisper"
+
     async def transcribe(self, audio_data: BinaryIO, language: Optional[str] = None) -> str:
-        """Transcribe audio using OpenAI Whisper"""
-        try:
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=self.api_key)
-            
-            # Map our language codes to Whisper language codes
-            language_map = {
-                "indian_english": "en",
-                "hindi": "hi",
-                "kannada": "kn",
-                "tamil": "ta"
-            }
-            whisper_lang = language_map.get(language, "en") if language else None
-            
-            transcription = await client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_data,
-                language=whisper_lang
-            )
-            
-            return transcription.text
-        except Exception as e:
-            raise Exception(f"STT transcription failed: {str(e)}")
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=self.api_key)
+        whisper_lang = LANG_MAP.get(language, "en") if language else None
+        transcription = await client.audio.transcriptions.create(
+            model="whisper-1", file=audio_data, language=whisper_lang
+        )
+        return transcription.text
+
+
+class FasterWhisperSTT(STTProvider):
+    """Local, free STT using faster-whisper (CTranslate2)."""
+
+    def __init__(self, model_size: str = "base"):
+        self.model_size = model_size
+        self._model = None
+
+    @property
+    def name(self) -> str:
+        return "faster_whisper"
+
+    def _get_model(self):
+        if self._model is None:
+            from faster_whisper import WhisperModel
+            logger.info(f"Loading faster-whisper model: {self.model_size}")
+            self._model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
+        return self._model
+
+    async def transcribe(self, audio_data: BinaryIO, language: Optional[str] = None) -> str:
+        import asyncio
+        import tempfile
+        whisper_lang = LANG_MAP.get(language, None)
+        audio_bytes = audio_data.read()
+
+        def _run():
+            model = self._get_model()
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+                tmp.write(audio_bytes)
+                tmp.flush()
+                segments, _info = model.transcribe(tmp.name, language=whisper_lang, beam_size=1)
+                return " ".join(seg.text for seg in segments).strip()
+
+        return await asyncio.to_thread(_run)
+
 
 class ElevenLabsTTS(TTSProvider):
-    """ElevenLabs TTS implementation"""
-    
     def __init__(self, api_key: str):
         self.api_key = api_key
-        # Default voice IDs for different languages
-        self.default_voices = {
-            "indian_english": "21m00Tcm4TlvDq8ikWAM",  # Rachel - neutral English
-            "hindi": "21m00Tcm4TlvDq8ikWAM",
-            "kannada": "21m00Tcm4TlvDq8ikWAM",
-            "tamil": "21m00Tcm4TlvDq8ikWAM"
-        }
-    
+        self.default_voice = "21m00Tcm4TlvDq8ikWAM"
+
+    @property
+    def name(self) -> str:
+        return "elevenlabs"
+
     async def synthesize(self, text: str, language: str, voice_id: Optional[str] = None) -> bytes:
-        """Synthesize speech using ElevenLabs"""
-        try:
-            from elevenlabs import ElevenLabs
-            from elevenlabs import VoiceSettings
-            
-            client = ElevenLabs(api_key=self.api_key)
-            
-            # Use provided voice_id or default for language
-            voice = voice_id or self.default_voices.get(language, self.default_voices["indian_english"])
-            
-            # Generate audio
-            audio_generator = client.text_to_speech.convert(
-                text=text,
-                voice_id=voice,
-                model_id="eleven_multilingual_v2",
-                voice_settings=VoiceSettings(
-                    stability=0.7,
-                    similarity_boost=0.8,
-                    style=0.0,
-                    use_speaker_boost=True
-                )
-            )
-            
-            # Collect audio data
-            audio_data = b""
-            for chunk in audio_generator:
-                audio_data += chunk
-            
-            return audio_data
-        except Exception as e:
-            raise Exception(f"TTS synthesis failed: {str(e)}")
+        from elevenlabs import ElevenLabs, VoiceSettings
+        client = ElevenLabs(api_key=self.api_key)
+        voice = voice_id or self.default_voice
+        audio_generator = client.text_to_speech.convert(
+            text=text, voice_id=voice, model_id="eleven_multilingual_v2",
+            voice_settings=VoiceSettings(stability=0.7, similarity_boost=0.8, style=0.0, use_speaker_boost=True),
+        )
+        return b"".join(audio_generator)
+
+
+class EdgeTTSProvider(TTSProvider):
+    """Free local TTS using Microsoft Edge TTS (edge-tts)."""
+
+    VOICE_MAP = {
+        "indian_english": "en-IN-NeerjaNeural",
+        "hindi": "hi-IN-SwaraNeural",
+        "kannada": "kn-IN-SapnaNeural",
+        "tamil": "ta-IN-PallaviNeural",
+    }
+
+    @property
+    def name(self) -> str:
+        return "edge_tts"
+
+    async def synthesize(self, text: str, language: str, voice_id: Optional[str] = None) -> bytes:
+        import edge_tts
+        voice = voice_id or self.VOICE_MAP.get(language, self.VOICE_MAP["indian_english"])
+        communicate = edge_tts.Communicate(text, voice)
+        buf = io.BytesIO()
+        async for chunk in communicate.stream():
+            if chunk.get("type") == "audio":
+                buf.write(chunk["data"])
+        return buf.getvalue()
+
 
 class VoiceService:
-    """Voice service that manages STT and TTS providers"""
-    
     def __init__(self):
         self.stt_provider: Optional[STTProvider] = None
         self.tts_provider: Optional[TTSProvider] = None
         self._initialize_providers()
-    
+
     def _initialize_providers(self):
-        """Initialize voice providers from environment config"""
-        stt_provider_type = os.environ.get('STT_PROVIDER', 'openai_whisper')
-        tts_provider_type = os.environ.get('TTS_PROVIDER', 'elevenlabs')
-        
-        # Initialize STT
-        if stt_provider_type == 'openai_whisper':
-            api_key = os.environ.get('EMERGENT_LLM_KEY') or os.environ.get('OPENAI_API_KEY')
+        stt_type = os.environ.get("STT_PROVIDER", "faster_whisper").lower()
+        tts_type = os.environ.get("TTS_PROVIDER", "edge_tts").lower()
+
+        if stt_type == "faster_whisper":
+            model_size = os.environ.get("WHISPER_MODEL_SIZE", "base")
+            self.stt_provider = FasterWhisperSTT(model_size)
+        elif stt_type == "openai_whisper":
+            api_key = os.environ.get("EMERGENT_LLM_KEY") or os.environ.get("OPENAI_API_KEY")
             if api_key:
                 self.stt_provider = OpenAIWhisperSTT(api_key)
-        
-        # Initialize TTS
-        if tts_provider_type == 'elevenlabs':
-            api_key = os.environ.get('ELEVENLABS_API_KEY')
+
+        if tts_type == "edge_tts":
+            self.tts_provider = EdgeTTSProvider()
+        elif tts_type == "elevenlabs":
+            api_key = os.environ.get("ELEVENLABS_API_KEY")
             if api_key:
                 self.tts_provider = ElevenLabsTTS(api_key)
-    
+
     async def speech_to_text(self, audio_data: BinaryIO, language: Optional[str] = None) -> str:
-        """Convert speech to text"""
         if not self.stt_provider:
-            raise Exception("STT provider not configured. Set STT_PROVIDER and required API keys.")
+            raise RuntimeError("STT provider not configured.")
         return await self.stt_provider.transcribe(audio_data, language)
-    
+
     async def text_to_speech(self, text: str, language: str, voice_id: Optional[str] = None) -> bytes:
-        """Convert text to speech"""
         if not self.tts_provider:
-            raise Exception("TTS provider not configured. Set TTS_PROVIDER and required API keys.")
+            raise RuntimeError("TTS provider not configured.")
         return await self.tts_provider.synthesize(text, language, voice_id)
-    
+
     def is_voice_enabled(self) -> bool:
-        """Check if voice services are available"""
         return self.stt_provider is not None and self.tts_provider is not None
 
-# Global voice service instance
+    @property
+    def stt_name(self) -> str:
+        return self.stt_provider.name if self.stt_provider else "none"
+
+    @property
+    def tts_name(self) -> str:
+        return self.tts_provider.name if self.tts_provider else "none"
+
+
 voice_service = VoiceService()

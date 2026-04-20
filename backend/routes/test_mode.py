@@ -123,18 +123,14 @@ async def test_mode_chat(input_data: TestModeInput, user_id: str = Depends(get_c
 
 def _determine_outcome(state: ConversationState) -> CallOutcome:
     """Determine call outcome from conversation state"""
-    if state.not_interested_count >= 2:
-        outcome_type = "not_interested"
-        is_qualified = False
+    if state.not_interested_count >= 1:
+        outcome_type, is_qualified = "not_interested", False
     elif state.context.get("user_is_busy"):
-        outcome_type = "busy"
-        is_qualified = False
-    elif state.questions_asked >= 3:
-        outcome_type = "interested"
-        is_qualified = True
+        outcome_type, is_qualified = "busy", False
+    elif state.current_turn >= 5:
+        outcome_type, is_qualified = "interested", True
     else:
-        outcome_type = "callback_scheduled"
-        is_qualified = False
+        outcome_type, is_qualified = "callback_scheduled", False
     
     return CallOutcome(
         call_id=state.call_id,

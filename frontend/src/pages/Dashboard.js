@@ -123,7 +123,7 @@ const Dashboard = () => {
                   <div 
                     key={campaign.id} 
                     className="bg-slate-700 p-4 rounded-md hover:bg-slate-600 cursor-pointer transition-colors" 
-                    onClick={() => navigate(`/campaigns/${campaign.id}/leads`)}
+                    onClick={() => navigate(`/campaign/${campaign.id}`)}
                     data-testid="campaign-item"
                   >
                     <h3 className="text-white font-medium">{campaign.name}</h3>

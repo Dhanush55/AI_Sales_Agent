@@ -68,7 +68,8 @@ const CampaignList = () => {
             {campaigns.map((campaign) => (
               <div
                 key={campaign.id}
-                className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-colors"
+                onClick={() => navigate(`/campaign/${campaign.id}`)}
+                className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
                 data-testid="campaign-card"
               >
                 <h3 className="text-xl font-bold text-white mb-2">{campaign.name}</h3>
@@ -79,7 +80,7 @@ const CampaignList = () => {
                   </span>
                   <span className="text-green-400 text-sm">{campaign.status}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => navigate(`/campaigns/${campaign.id}/leads`)}
                     className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
