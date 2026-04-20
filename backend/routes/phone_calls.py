@@ -82,41 +82,26 @@ LANG_TO_TWILIO = {
 
 @router.post("/webhook/answer")
 async def webhook_answer(campaign_id: str, lead_id: str, request: Request):
-    """Twilio answer webhook - returns greeting + Gather."""
-    from twilio.twiml.voice_response import VoiceResponse, Gather
+    """Twilio answer webhook - opens a bi-directional Media Stream to our WS."""
+    from twilio.twiml.voice_response import VoiceResponse, Connect, Stream
 
     form = await request.form()
     call_sid = form.get("CallSid", "")
 
     call = await db.calls.find_one({"twilio_call_sid": call_sid}, {"_id": 0})
-    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not call:
+        r = VoiceResponse()
+        r.hangup()
+        return _twiml_response(str(r))
 
-    language = campaign["language"] if campaign else "indian_english"
-    twilio_lang = LANG_TO_TWILIO.get(language, "en-IN")
-
-    # Initial greeting - simple opener
-    greetings = {
-        "indian_english": "Hello, am I speaking with the right person? I have a quick question.",
-        "hindi": "Namaste, kya main sahi vyakti se baat kar raha hoon? Mujhe ek chhota sawaal hai.",
-        "kannada": "Namaskara, naanu sariyaada vyaktiya jote matadutidane? Nanage ondu prashne ide.",
-        "tamil": "Vanakkam, naan sariyana nabarudan pesukirena? Enakku oru kelvi irukku.",
-    }
-    greeting = greetings.get(language, greetings["indian_english"])
+    # Build ws(s) URL from APP_BASE_URL
+    ws_url = settings.APP_BASE_URL.replace("https://", "wss://").replace("http://", "ws://")
+    stream_url = f"{ws_url}/ws/media-stream/{call['id']}"
 
     response = VoiceResponse()
-    gather = Gather(
-        input="speech",
-        language=twilio_lang,
-        timeout=5,
-        speech_timeout="auto",
-        action=f"{settings.APP_BASE_URL}/api/phone/webhook/gather?call_id={call['id'] if call else ''}",
-        method="POST",
-    )
-    gather.say(greeting, language=twilio_lang)
-    response.append(gather)
-    response.say("I did not hear anything. Goodbye.", language=twilio_lang)
-    response.hangup()
-
+    connect = Connect()
+    connect.stream(url=stream_url)
+    response.append(connect)
     return _twiml_response(str(response))
 
 

@@ -14,7 +14,7 @@ app = FastAPI(title="Voice Sales Agent API")
 
 from routes import (
     auth, campaigns, leads, calls, test_mode, conversation_states, voice,
-    bulk_operations, analytics, phone_calls, dialer, admin,
+    bulk_operations, analytics, phone_calls, dialer, admin, media_stream,
 )
 
 app.include_router(auth.router, prefix="/api")
@@ -29,6 +29,7 @@ app.include_router(analytics.router, prefix="/api")
 app.include_router(phone_calls.router, prefix="/api")
 app.include_router(dialer.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(media_stream.router)
 
 
 @app.get("/api/")

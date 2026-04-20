@@ -43,6 +43,10 @@ The AI adapts purely through `campaign.goal` — no industry hardcoded anywhere.
 - `/api/analytics/{overview,campaign/{id}}` (tenant-scoped)
 
 ## Implemented (Feb 2026)
+- [x] Real-time Twilio Media Streams: WebSocket endpoint `/ws/media-stream/{call_id}`
+      (mu-law 8kHz bi-directional). Answer webhook now emits `<Connect><Stream>`.
+      End-to-end pipeline verified locally (AI greeting → edge-tts → ffmpeg mulaw → WS frames).
+      nginx.conf updated to proxy /ws/ with Upgrade headers for Docker deploy.
 - [x] JWT auth + company_name + `is_admin` flag
 - [x] Campaign/Lead/Call CRUD with tenant isolation (all queries filter
       through user's own campaigns)
