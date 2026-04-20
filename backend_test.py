@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 class VoiceSalesAgentTester:
-    def __init__(self, base_url="https://leadconvo-1.preview.emergentagent.com"):
+    def __init__(self, base_url="https://voice-crm-demo-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
