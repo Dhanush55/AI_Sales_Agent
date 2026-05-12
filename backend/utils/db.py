@@ -1,7 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
+import certifi
 
-client = AsyncIOMotorClient(settings.MONGO_URL)
+# tlsCAFile is required on macOS + Python 3.14 to avoid TLSV1_ALERT_INTERNAL_ERROR
+# when connecting to MongoDB Atlas SRV cluster.
+client = AsyncIOMotorClient(settings.MONGO_URL, tlsCAFile=certifi.where())
 db = client[settings.DB_NAME]
 
 

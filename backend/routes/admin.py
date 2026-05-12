@@ -1,6 +1,6 @@
 """Admin routes - platform-wide user and stats management."""
-from fastapi import APIRouter, HTTPException, Depends
-from utils.security import get_current_user
+from fastapi import APIRouter, HTTPException, Depends, Query
+from utils.security import get_current_user, hash_password
 from utils.db import db
 from datetime import datetime, timezone, timedelta
 import asyncio
@@ -79,6 +79,24 @@ async def platform_stats(_admin: str = Depends(require_admin)):
         "calls_today": calls_today,
         "active_dialers": active_dialers,
     }
+
+
+# ── TEMPORARY local recovery endpoint — REMOVE AFTER USE ──
+@router.post("/_local_reset_password")
+async def local_reset_password(
+    email: str = Query(...),
+    new_password: str = Query(...),
+    secret: str = Query(...),
+):
+    """One-shot local password reset. Hard-coded secret; remove this route after recovery."""
+    if secret != "recovery-2026-04-26":
+        raise HTTPException(403, "bad secret")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(404, f"no user with email {email}")
+    new_hash = hash_password(new_password)
+    await db.users.update_one({"email": email}, {"$set": {"password_hash": new_hash}})
+    return {"ok": True, "email": email, "user_id": user.get("id")}
 
 
 @router.put("/users/{target_user_id}/toggle-admin")
